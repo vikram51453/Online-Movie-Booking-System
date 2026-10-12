@@ -2,6 +2,11 @@
 pipeline {
     agent any
 
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -46,8 +51,7 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 bat '''
-                    docker ps --filter "name=movie-booking-app"
-                    docker inspect --format="{{.State.Status}}" movie-booking-app
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ok = $false; for ($i = 0; $i -lt 12; $i++) { try { $r = Invoke-WebRequest -Uri 'http://localhost:8081/' -UseBasicParsing -TimeoutSec 5; if ($r.StatusCode -eq 200) { $ok = $true; break } } catch { Start-Sleep -Seconds 5 } }; if (-not $ok) { Write-Error 'Website health check failed'; exit 1 }; Write-Host 'Website health check passed: HTTP 200'"
                 '''
             }
         }
@@ -55,7 +59,7 @@ pipeline {
 
     post {
         success {
-            echo 'SUCCESS: Movie Booking System built, tested, and deployed using Docker!'
+            echo 'SUCCESS: Build, tests, Docker deployment, and website health check completed!'
             echo 'Website: http://localhost:8081'
         }
 
