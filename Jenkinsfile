@@ -64,7 +64,7 @@ pipeline {
         }
 
         failure {
-            echo 'FAILURE: Pipeline failed. Check Console Output for the error.'
+            echo 'FAILURE: Pipeline failed. Check Console Output for the error..'
         }
     }
 }
