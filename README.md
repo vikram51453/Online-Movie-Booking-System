@@ -363,3 +363,4 @@ To prevent double booking when multiple users attempt to reserve the same seat s
 ---
 
 *Phase 1 of the Online Movie Ticket Booking System is complete, tested, and ready for Phase 2 DevOps integration.*
+CI/CD Status: Automated testing, Docker build, and deployment configured with Jenkins.
