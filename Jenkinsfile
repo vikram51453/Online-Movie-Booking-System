@@ -36,8 +36,18 @@ pipeline {
         stage('Docker Deploy') {
             steps {
                 bat '''
-                    docker rm -f movie-booking-app 2>NUL
+                    docker stop movie-booking-app 2>NUL
+                    docker rm movie-booking-app 2>NUL
                     docker run -d --name movie-booking-app -p 8081:8081 -e DB_HOST=host.docker.internal -e DB_PORT=3306 -e DB_NAME=movie_booking movie-booking:1.0
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                bat '''
+                    docker ps --filter "name=movie-booking-app"
+                    docker inspect --format="{{.State.Status}}" movie-booking-app
                 '''
             }
         }
@@ -45,11 +55,12 @@ pipeline {
 
     post {
         success {
-            echo 'Movie Booking System pipeline and Docker deployment completed successfully!'
+            echo 'SUCCESS: Movie Booking System built, tested, and deployed using Docker!'
+            echo 'Website: http://localhost:8081'
         }
 
         failure {
-            echo 'Pipeline failed. Check the console output.'
+            echo 'FAILURE: Pipeline failed. Check Console Output for the error.'
         }
     }
 }
