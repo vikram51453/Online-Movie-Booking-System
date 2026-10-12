@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Movies | CineSphere</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+
+    <main class="container my-5">
+        <div class="row align-items-center mb-4">
+            <div class="col-md-6">
+                <h1 class="h2 mb-1">Explore Movies</h1>
+                <p class="text-secondary mb-0">Browse all current and upcoming movie releases</p>
+            </div>
+            <div class="col-md-6 mt-3 mt-md-0">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" id="movie-search-input" class="form-control" placeholder="Search movies by title or keyword...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="cinema-card p-3 mb-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label small mb-1" for="filter-genre">Genre</label>
+                    <select id="filter-genre" class="form-select form-select-sm">
+                        <option value="ALL">All Genres</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small mb-1" for="filter-language">Language</label>
+                    <select id="filter-language" class="form-select form-select-sm">
+                        <option value="ALL">All Languages</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small mb-1" for="sort-by">Sort By</label>
+                    <select id="sort-by" class="form-select form-select-sm">
+                        <option value="newest">Latest Release</option>
+                        <option value="rating">Highest Rating</option>
+                        <option value="title">Title (A-Z)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movie Results -->
+        <div id="movies-loading" class="text-center py-5">
+            <div class="spinner-border text-danger" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <div class="row g-4" id="movies-list" style="display: none;"></div>
+
+        <div id="movies-empty" class="text-center py-5 cinema-card" style="display: none;">
+            <i class="bi bi-film fs-1 text-muted mb-3 d-block"></i>
+            <h5>No Movies Match Your Criteria</h5>
+            <p class="text-secondary">Try adjusting filters or searching for something else.</p>
+        </div>
+    </main>
+
+    <div id="footer-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const searchInput = document.getElementById('movie-search-input');
+            const genreSelect = document.getElementById('filter-genre');
+            const langSelect = document.getElementById('filter-language');
+            const sortSelect = document.getElementById('sort-by');
+            const list = document.getElementById('movies-list');
+            const loading = document.getElementById('movies-loading');
+            const empty = document.getElementById('movies-empty');
+
+            let allMovies = [];
+
+            async function initFilters() {
+                try {
+                    const [genresRes, langsRes] = await Promise.all([
+                        API.get('/api/movies/genres'),
+                        API.get('/api/movies/languages')
+                    ]);
+                    if (genresRes.data) {
+                        genresRes.data.forEach(g => {
+                            const opt = document.createElement('option');
+                            opt.value = g;
+                            opt.textContent = g;
+                            genreSelect.appendChild(opt);
+                        });
+                    }
+                    if (langsRes.data) {
+                        langsRes.data.forEach(l => {
+                            const opt = document.createElement('option');
+                            opt.value = l;
+                            opt.textContent = l;
+                            langSelect.appendChild(opt);
+                        });
+                    }
+                } catch (e) {
+                    console.debug(e);
+                }
+            }
+
+            async function fetchMovies() {
+                loading.style.display = 'block';
+                list.style.display = 'none';
+                empty.style.display = 'none';
+
+                try {
+                    const search = searchInput.value.trim();
+                    const genre = genreSelect.value;
+                    const language = langSelect.value;
+
+                    const params = new URLSearchParams();
+                    if (search) params.append('search', search);
+                    if (genre && genre !== 'ALL') params.append('genre', genre);
+                    if (language && language !== 'ALL') params.append('language', language);
+
+                    const url = '/api/movies' + (params.toString() ? '?' + params.toString() : '');
+                    const res = await API.get(url);
+                    allMovies = res.data || [];
+                    renderMovies();
+                } catch (err) {
+                    loading.style.display = 'none';
+                    showToast('Failed to load movies: ' + err.message, 'error');
+                }
+            }
+
+            function renderMovies() {
+                loading.style.display = 'none';
+                if (!allMovies || allMovies.length === 0) {
+                    empty.style.display = 'block';
+                    list.style.display = 'none';
+                    return;
+                }
+
+                // Sort movies
+                const sortBy = sortSelect.value;
+                let sorted = [...allMovies];
+                if (sortBy === 'rating') {
+                    sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                } else if (sortBy === 'title') {
+                    sorted.sort((a, b) => a.title.localeCompare(b.title));
+                } else {
+                    sorted.sort((a, b) => (b.id || 0) - (a.id || 0));
+                }
+
+                list.innerHTML = '';
+                sorted.forEach(movie => {
+                    const col = document.createElement('div');
+                    col.className = 'col-6 col-md-4 col-lg-3';
+                    col.innerHTML = `
+                        <div class="movie-card">
+                            <div class="movie-poster-wrapper">
+                                <img src="${movie.posterUrl || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=600&q=80'}" alt="${escapeHtml(movie.title)}" class="movie-poster-img" loading="lazy">
+                                <div class="movie-rating-badge">
+                                    <i class="bi bi-star-fill"></i> ${movie.rating ? movie.rating.toFixed(1) : '8.5'}
+                                </div>
+                            </div>
+                            <div class="movie-card-body">
+                                <h3 class="movie-card-title text-truncate" title="${escapeHtml(movie.title)}">${escapeHtml(movie.title)}</h3>
+                                <div class="movie-meta">
+                                    <span class="movie-tag">${escapeHtml(movie.language)}</span>
+                                    <span class="movie-tag">${movie.durationMinutes} min</span>
+                                </div>
+                                <p class="text-secondary small text-truncate mb-3">${escapeHtml(movie.genre)}</p>
+                                <div class="mt-auto d-flex gap-2">
+                                    <a href="/movie-details.html?id=${movie.id}" class="btn btn-cinema-outline btn-cinema-sm flex-grow-1">Details</a>
+                                    <a href="/shows.html?movieId=${movie.id}" class="btn btn-cinema btn-cinema-sm flex-grow-1">Book</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(col);
+                });
+                list.style.display = 'flex';
+            }
+
+            let debounceTimer;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(fetchMovies, 300);
+            });
+
+            genreSelect.addEventListener('change', fetchMovies);
+            langSelect.addEventListener('change', fetchMovies);
+            sortSelect.addEventListener('change', renderMovies);
+
+            await initFilters();
+            await fetchMovies();
+        });
+    </script>
+</body>
+</html>

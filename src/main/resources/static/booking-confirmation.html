@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmed | CineSphere</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        @media print {
+            body { background: white !important; color: black !important; }
+            .cinema-navbar, .cinema-footer, .no-print { display: none !important; }
+            .ticket-card { box-shadow: none !important; border: 1px solid #000 !important; }
+            .text-white { color: black !important; }
+            .text-secondary, .text-muted { color: #555 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+
+    <main class="container my-5">
+        <div id="confirm-loading" class="text-center py-5">
+            <div class="spinner-border text-danger" role="status"></div>
+            <p class="text-muted mt-2">Loading booking confirmation...</p>
+        </div>
+
+        <div id="confirm-content" class="row justify-content-center" style="display: none;">
+            <div class="col-md-9 col-lg-7">
+                <!-- Success Alert Header -->
+                <div class="text-center mb-4">
+                    <div class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-25 text-success border border-success border-opacity-50 mb-3 shadow">
+                        <i class="bi bi-check-circle-fill display-5"></i>
+                    </div>
+                    <h1 class="h2 text-white mb-1">Booking Confirmed!</h1>
+                    <p class="text-secondary">Your ticket reservation has been successfully secured and recorded.</p>
+                </div>
+
+                <!-- Digital Ticket Card -->
+                <div class="ticket-card mb-4" id="printable-ticket">
+                    <!-- Ticket Header -->
+                    <div class="ticket-header">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="cinema-brand">
+                                <i class="bi bi-film"></i> Cine<span>Sphere</span>
+                            </div>
+                            <span class="badge-status-confirmed">
+                                <i class="bi bi-check-circle me-1"></i> CONFIRMED
+                            </span>
+                        </div>
+                        <div class="text-secondary small">
+                            Booking Reference: <strong class="text-warning font-monospace" id="conf-ref">MBK-XXXX</strong>
+                        </div>
+                    </div>
+
+                    <!-- Ticket Body -->
+                    <div class="ticket-body">
+                        <div class="row g-4 align-items-center mb-4">
+                            <div class="col-auto">
+                                <img id="conf-poster" src="" alt="" style="width: 75px; height: 110px; object-fit: cover; border-radius: 8px;">
+                            </div>
+                            <div class="col">
+                                <h3 class="h4 text-white mb-1" id="conf-movie"></h3>
+                                <div class="text-secondary small mb-1">
+                                    <i class="bi bi-geo-alt text-danger me-1"></i> <span id="conf-theatre"></span>
+                                </div>
+                                <div class="badge bg-dark border border-secondary border-opacity-25 text-white">
+                                    <i class="bi bi-display me-1 text-danger"></i> <span id="conf-screen"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 py-3 border-top border-bottom border-secondary border-opacity-25 mb-4">
+                            <div class="col-6 col-sm-3">
+                                <div class="text-secondary small">Date</div>
+                                <div class="text-white fw-bold" id="conf-date"></div>
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <div class="text-secondary small">Time</div>
+                                <div class="text-warning fw-bold fs-6" id="conf-time"></div>
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <div class="text-secondary small">Seats</div>
+                                <div class="text-white fw-bold fs-6" id="conf-seats"></div>
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <div class="text-secondary small">Total Paid</div>
+                                <div class="text-danger fw-bold fs-6" id="conf-total"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap justify-content-between align-items-center small text-secondary">
+                            <div>
+                                <div>Booked By: <strong class="text-white" id="conf-user-name"></strong></div>
+                                <div>Email: <span id="conf-user-email"></span></div>
+                            </div>
+                            <div class="mt-3 mt-sm-0 text-center">
+                                <div class="p-2 bg-white rounded d-inline-block">
+                                    <i class="bi bi-qr-code fs-1 text-dark"></i>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.7rem;">Entry Pass Barcode</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex flex-wrap gap-2 justify-content-center no-print">
+                    <button class="btn btn-cinema-outline" onclick="window.print()">
+                        <i class="bi bi-printer me-1"></i> Print Ticket
+                    </button>
+                    <a href="/my-bookings.html" class="btn btn-cinema">
+                        <i class="bi bi-ticket-perforated me-1"></i> View My Bookings
+                    </a>
+                    <a href="/movies.html" class="btn btn-cinema-outline">
+                        <i class="bi bi-house me-1"></i> Back to Movies
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const ref = getQueryParam('ref');
+            const loading = document.getElementById('confirm-loading');
+            const content = document.getElementById('confirm-content');
+
+            if (!ref) {
+                // Check if lastBooking is in sessionStorage
+                const cached = sessionStorage.getItem('lastBooking');
+                if (cached) {
+                    renderConfirmation(JSON.parse(cached));
+                    return;
+                }
+                window.location.href = '/my-bookings.html';
+                return;
+            }
+
+            try {
+                const res = await API.get('/api/bookings/reference/' + ref);
+                renderConfirmation(res.data);
+            } catch (err) {
+                loading.innerHTML = `
+                    <div class="text-danger py-5">
+                        <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
+                        <h5>Unable to Load Booking</h5>
+                        <p class="text-secondary">${escapeHtml(err.message)}</p>
+                        <a href="/my-bookings.html" class="btn btn-cinema btn-cinema-sm mt-2">Go to My Bookings</a>
+                    </div>
+                `;
+            }
+
+            function renderConfirmation(b) {
+                document.getElementById('conf-ref').textContent = b.bookingReference;
+                document.getElementById('conf-poster').src = b.moviePosterUrl || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=200&q=80';
+                document.getElementById('conf-movie').textContent = b.movieTitle;
+                document.getElementById('conf-theatre').textContent = `${b.theatreName} (${b.theatreCity})`;
+                document.getElementById('conf-screen').textContent = `${b.screenName} - ${b.screenType}`;
+                document.getElementById('conf-date').textContent = formatDate(b.showDate);
+                document.getElementById('conf-time').textContent = formatTime(b.startTime);
+                document.getElementById('conf-seats').textContent = b.seatNumbers.join(', ');
+                document.getElementById('conf-total').textContent = formatCurrency(b.totalAmount);
+                document.getElementById('conf-user-name').textContent = b.userName;
+                document.getElementById('conf-user-email').textContent = b.userEmail;
+
+                loading.style.display = 'none';
+                content.style.display = 'flex';
+            }
+        });
+    </script>
+</body>
+</html>

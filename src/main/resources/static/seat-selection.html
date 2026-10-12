@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Seats | CineSphere</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+
+    <main class="container my-4">
+        <!-- Show Details Header -->
+        <div class="cinema-card-glass p-3 mb-4">
+            <div class="row align-items-center g-3">
+                <div class="col-auto">
+                    <img id="show-movie-poster" src="" alt="" style="width: 60px; height: 90px; object-fit: cover; border-radius: 8px;">
+                </div>
+                <div class="col">
+                    <h2 class="h4 text-white mb-1" id="show-movie-title">Loading Show...</h2>
+                    <div class="text-secondary small d-flex flex-wrap gap-3">
+                        <span><i class="bi bi-geo-alt me-1 text-danger"></i> <span id="show-theatre-name"></span> (<span id="show-theatre-city"></span>)</span>
+                        <span><i class="bi bi-display me-1 text-danger"></i> <span id="show-screen-name"></span></span>
+                        <span><i class="bi bi-calendar me-1 text-danger"></i> <span id="show-date"></span></span>
+                        <span><i class="bi bi-clock me-1 text-danger"></i> <span id="show-time"></span></span>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <a href="/shows.html" class="btn btn-cinema-outline btn-cinema-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Change Show
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="layout-loading" class="text-center py-5">
+            <div class="spinner-border text-danger" role="status"></div>
+            <p class="text-muted mt-2">Loading interactive seating map...</p>
+        </div>
+
+        <div id="layout-content" class="row g-4" style="display: none;">
+            <!-- Left: Seat Map -->
+            <div class="col-lg-8">
+                <div class="cinema-card p-4">
+                    <!-- Screen visual curve -->
+                    <div class="cinema-screen-container">
+                        <div class="cinema-screen"></div>
+                        <div class="cinema-screen-text">
+                            <i class="bi bi-eye me-1"></i> SCREEN THIS WAY
+                        </div>
+                    </div>
+
+                    <!-- Seat Matrix -->
+                    <div class="seat-matrix" id="seat-matrix-container"></div>
+
+                    <!-- Legend -->
+                    <div class="seat-legend">
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: var(--seat-available-silver); border: 1px solid rgba(203, 213, 225, 0.2);"></div>
+                            <span>Silver Tier</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: var(--seat-available-gold); border: 1px solid rgba(250, 204, 21, 0.3);"></div>
+                            <span>Gold Tier</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: var(--seat-available-platinum); border: 1px solid rgba(192, 132, 252, 0.35);"></div>
+                            <span>Platinum VIP</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: var(--seat-selected); box-shadow: 0 0 8px var(--primary-red-glow);"></div>
+                            <span>Selected</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: var(--seat-booked); opacity: 0.5;"></div>
+                            <span>Sold Out</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Live Provisional Selection Summary -->
+            <div class="col-lg-4">
+                <div class="order-summary-card position-sticky" style="top: 100px;">
+                    <h3 class="h5 text-white mb-3 d-flex align-items-center justify-content-between">
+                        <span>Selection Summary</span>
+                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50" id="badge-selected-count">0 Seats</span>
+                    </h3>
+
+                    <div class="order-summary-row">
+                        <span>Movie</span>
+                        <strong class="text-white text-truncate" id="summary-movie" style="max-width: 170px;"></strong>
+                    </div>
+
+                    <div class="order-summary-row">
+                        <span>Selected Seats</span>
+                        <strong class="text-warning" id="summary-seats">None selected</strong>
+                    </div>
+
+                    <div class="order-summary-row">
+                        <span>Base Ticket Price</span>
+                        <span id="summary-base-price">₹0.00</span>
+                    </div>
+
+                    <div id="seat-breakdown-container" class="my-2 small text-secondary">
+                        <!-- Dynamic items per seat -->
+                    </div>
+
+                    <div class="order-summary-row total-row">
+                        <span>Total Amount</span>
+                        <span class="total-amount" id="summary-total">₹0.00</span>
+                    </div>
+
+                    <p class="text-muted small my-3">
+                        <i class="bi bi-shield-check me-1 text-success"></i> Ticket price is verified and seats are held during checkout.
+                    </p>
+
+                    <button id="btn-proceed-booking" class="btn btn-cinema w-100 py-3" disabled>
+                        <span>Proceed to Booking Summary</span>
+                        <i class="bi bi-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const showId = getQueryParam('showId');
+            if (!showId) {
+                window.location.href = '/shows.html';
+                return;
+            }
+
+            const loading = document.getElementById('layout-loading');
+            const content = document.getElementById('layout-content');
+            const matrixContainer = document.getElementById('seat-matrix-container');
+            const proceedBtn = document.getElementById('btn-proceed-booking');
+            const breakdownContainer = document.getElementById('seat-breakdown-container');
+
+            let layoutData = null;
+            let selectedSeatsMap = new Map(); // seatId -> seatObject
+
+            try {
+                const res = await API.get(`/api/shows/${showId}/seats`);
+                layoutData = res.data;
+
+                // Populate Header
+                document.getElementById('show-movie-poster').src = layoutData.moviePosterUrl || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=200&q=80';
+                document.getElementById('show-movie-title').textContent = layoutData.movieTitle;
+                document.getElementById('show-theatre-name').textContent = layoutData.theatreName;
+                document.getElementById('show-theatre-city').textContent = layoutData.theatreCity;
+                document.getElementById('show-screen-name').textContent = `${layoutData.screenName} (${layoutData.screenType})`;
+                document.getElementById('show-date').textContent = formatDate(layoutData.showDate);
+                document.getElementById('show-time').textContent = formatTime(layoutData.startTime);
+                document.getElementById('summary-movie').textContent = layoutData.movieTitle;
+                document.getElementById('summary-base-price').textContent = formatCurrency(layoutData.basePrice);
+
+                renderSeatGrid(layoutData.seats);
+
+                loading.style.display = 'none';
+                content.style.display = 'flex';
+            } catch (err) {
+                loading.innerHTML = `
+                    <div class="text-danger py-5">
+                        <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
+                        <h5>Failed to load seat layout</h5>
+                        <p class="text-secondary">${escapeHtml(err.message)}</p>
+                        <a href="/shows.html" class="btn btn-cinema btn-cinema-sm mt-2">Back to Shows</a>
+                    </div>
+                `;
+            }
+
+            function renderSeatGrid(seats) {
+                matrixContainer.innerHTML = '';
+
+                // Group seats by rowName
+                const rowsMap = new Map();
+                seats.forEach(s => {
+                    if (!rowsMap.has(s.rowName)) {
+                        rowsMap.set(s.rowName, []);
+                    }
+                    rowsMap.get(s.rowName).push(s);
+                });
+
+                rowsMap.forEach((rowSeats, rowName) => {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'seat-row';
+
+                    const labelLeft = document.createElement('div');
+                    labelLeft.className = 'seat-row-label';
+                    labelLeft.textContent = rowName;
+                    rowDiv.appendChild(labelLeft);
+
+                    rowSeats.forEach(seat => {
+                        const seatDiv = document.createElement('div');
+                        const tierClass = seat.seatType ? seat.seatType.toLowerCase() : 'silver';
+                        seatDiv.className = `seat-item ${tierClass} ${seat.booked ? 'booked' : ''}`;
+                        seatDiv.id = `seat-${seat.id}`;
+                        seatDiv.textContent = seat.seatNumber;
+                        seatDiv.title = `Seat ${seat.seatCode} (${seat.seatType}) - ${formatCurrency(seat.price)}`;
+
+                        if (!seat.booked) {
+                            seatDiv.addEventListener('click', () => toggleSeat(seat, seatDiv));
+                        }
+
+                        rowDiv.appendChild(seatDiv);
+                    });
+
+                    const labelRight = document.createElement('div');
+                    labelRight.className = 'seat-row-label';
+                    labelRight.textContent = rowName;
+                    rowDiv.appendChild(labelRight);
+
+                    matrixContainer.appendChild(rowDiv);
+                });
+            }
+
+            function toggleSeat(seat, seatDiv) {
+                if (selectedSeatsMap.has(seat.id)) {
+                    selectedSeatsMap.delete(seat.id);
+                    seatDiv.classList.remove('selected');
+                } else {
+                    selectedSeatsMap.set(seat.id, seat);
+                    seatDiv.classList.add('selected');
+                }
+                updateSummary();
+            }
+
+            function updateSummary() {
+                const count = selectedSeatsMap.size;
+                document.getElementById('badge-selected-count').textContent = `${count} ${count === 1 ? 'Seat' : 'Seats'}`;
+
+                if (count === 0) {
+                    document.getElementById('summary-seats').textContent = 'None selected';
+                    document.getElementById('summary-total').textContent = '₹0.00';
+                    breakdownContainer.innerHTML = '';
+                    proceedBtn.disabled = true;
+                    return;
+                }
+
+                const selectedList = Array.from(selectedSeatsMap.values());
+                const seatCodes = selectedList.map(s => s.seatCode).join(', ');
+                document.getElementById('summary-seats').textContent = seatCodes;
+
+                let total = 0;
+                breakdownContainer.innerHTML = '';
+
+                selectedList.forEach(s => {
+                    total += Number(s.price);
+                    const item = document.createElement('div');
+                    item.className = 'd-flex justify-content-between py-1 border-bottom border-secondary border-opacity-10';
+                    item.innerHTML = `
+                        <span>Seat ${s.seatCode} (${s.seatType})</span>
+                        <span class="text-white">${formatCurrency(s.price)}</span>
+                    `;
+                    breakdownContainer.appendChild(item);
+                });
+
+                document.getElementById('summary-total').textContent = formatCurrency(total);
+                proceedBtn.disabled = false;
+            }
+
+            proceedBtn.addEventListener('click', () => {
+                if (selectedSeatsMap.size === 0) return;
+
+                const selectedList = Array.from(selectedSeatsMap.values());
+                const sessionPayload = {
+                    showId: layoutData.showId,
+                    movieId: layoutData.movieId,
+                    movieTitle: layoutData.movieTitle,
+                    moviePosterUrl: layoutData.moviePosterUrl,
+                    theatreName: layoutData.theatreName,
+                    theatreCity: layoutData.theatreCity,
+                    screenName: layoutData.screenName,
+                    screenType: layoutData.screenType,
+                    showDate: layoutData.showDate,
+                    startTime: layoutData.startTime,
+                    basePrice: layoutData.basePrice,
+                    seats: selectedList,
+                    seatIds: selectedList.map(s => s.id),
+                    seatCodes: selectedList.map(s => s.seatCode),
+                    provisionalTotal: selectedList.reduce((acc, s) => acc + Number(s.price), 0)
+                };
+
+                sessionStorage.setItem('pendingBooking', JSON.stringify(sessionPayload));
+                window.location.href = '/booking-summary.html';
+            });
+        });
+    </script>
+</body>
+</html>

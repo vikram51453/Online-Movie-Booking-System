@@ -1,0 +1,20 @@
+# Maven build output
+target/
+*.jar
+*.war
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS and logs
+*.log
+.DS_Store
+Thumbs.db
+
+# Local MySQL data directory
+mysql_data/

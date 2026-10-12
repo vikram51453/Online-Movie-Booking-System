@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Movies | CineSphere Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+
+    <main class="container my-5">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div>
+                <a href="/admin-dashboard.html" class="text-secondary small">&larr; Back to Dashboard</a>
+                <h1 class="h2 text-white mb-0">Movie Catalog Management</h1>
+            </div>
+            <button class="btn btn-cinema btn-cinema-sm" id="btn-add-movie">
+                <i class="bi bi-plus-circle me-1"></i> Add New Movie
+            </button>
+        </div>
+
+        <div id="movies-loading" class="text-center py-5">
+            <div class="spinner-border text-danger" role="status"></div>
+            <p class="text-muted mt-2">Loading movie inventory...</p>
+        </div>
+
+        <div class="cinema-card p-4" id="movies-container" style="display: none;">
+            <div class="table-responsive">
+                <table class="table table-cinema align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Poster</th>
+                            <th>Title</th>
+                            <th>Genre</th>
+                            <th>Language</th>
+                            <th>Duration</th>
+                            <th>Rating</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="movies-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Movie Create/Edit Modal -->
+    <div class="modal fade" id="movieModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary border-opacity-25">
+                <div class="modal-header border-secondary border-opacity-25">
+                    <h5 class="modal-title" id="movie-modal-title">Add Movie</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="movie-form">
+                    <div class="modal-body">
+                        <input type="hidden" id="movie-id">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label" for="movie-title">Title *</label>
+                                <input type="text" id="movie-title" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="movie-rating">Rating (0.0 - 10.0)</label>
+                                <input type="number" step="0.1" min="0" max="10" id="movie-rating" class="form-control" value="8.0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="movie-genre">Genre *</label>
+                                <input type="text" id="movie-genre" class="form-control" placeholder="Sci-Fi / Action" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="movie-language">Language *</label>
+                                <input type="text" id="movie-language" class="form-control" placeholder="English" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="movie-duration">Duration (minutes) *</label>
+                                <input type="number" id="movie-duration" class="form-control" min="1" value="120" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="movie-release">Release Date</label>
+                                <input type="date" id="movie-release" class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="movie-poster">Poster Image URL</label>
+                                <input type="url" id="movie-poster" class="form-control" placeholder="https://...">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="movie-trailer">Trailer Video URL</label>
+                                <input type="url" id="movie-trailer" class="form-control" placeholder="https://youtube.com/...">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="movie-desc">Synopsis / Description</label>
+                                <textarea id="movie-desc" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="movie-active" checked>
+                                    <label class="form-check-label text-secondary" for="movie-active">Active in Catalog (Visible for booking)</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary border-opacity-25">
+                        <button type="button" class="btn btn-cinema-outline btn-cinema-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-cinema btn-cinema-sm" id="btn-save-movie">Save Movie</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loading = document.getElementById('movies-loading');
+            const container = document.getElementById('movies-container');
+            const tbody = document.getElementById('movies-tbody');
+            const movieModal = new bootstrap.Modal(document.getElementById('movieModal'));
+            const form = document.getElementById('movie-form');
+
+            let moviesCache = [];
+
+            try {
+                const user = await API.getCurrentUser();
+                if (!user || user.role !== 'ROLE_ADMIN') {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                await loadMovies();
+            } catch (err) {
+                showToast('Authorization error: ' + err.message, 'error');
+            }
+
+            async function loadMovies() {
+                loading.style.display = 'block';
+                container.style.display = 'none';
+                try {
+                    const res = await API.get('/api/admin/movies');
+                    moviesCache = res.data || [];
+                    renderTable();
+                    loading.style.display = 'none';
+                    container.style.display = 'block';
+                } catch (e) {
+                    loading.style.display = 'none';
+                    showToast('Failed to load movies: ' + e.message, 'error');
+                }
+            }
+
+            function renderTable() {
+                tbody.innerHTML = '';
+                if (moviesCache.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-secondary">No movies found. Add one above!</td></tr>`;
+                    return;
+                }
+
+                moviesCache.forEach(m => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>
+                            <img src="${m.posterUrl || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=100&q=80'}" alt="" style="width: 45px; height: 65px; object-fit: cover; border-radius: 4px;">
+                        </td>
+                        <td>
+                            <div class="text-white fw-bold">${escapeHtml(m.title)}</div>
+                            <div class="text-muted small">ID: ${m.id}</div>
+                        </td>
+                        <td><span class="text-secondary small">${escapeHtml(m.genre)}</span></td>
+                        <td><span class="badge bg-dark border border-secondary border-opacity-25">${escapeHtml(m.language)}</span></td>
+                        <td><span class="text-secondary small">${m.durationMinutes} min</span></td>
+                        <td><span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>${m.rating || 'N/A'}</span></td>
+                        <td>
+                            <span class="${m.active ? 'badge bg-success bg-opacity-25 text-success' : 'badge bg-danger bg-opacity-25 text-danger'}">
+                                ${m.active ? 'Active' : 'Inactive'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-cinema-outline btn-cinema-sm" onclick="editMovie(${m.id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-cinema-sm" onclick="deleteMovie(${m.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            document.getElementById('btn-add-movie').addEventListener('click', () => {
+                form.reset();
+                document.getElementById('movie-id').value = '';
+                document.getElementById('movie-modal-title').textContent = 'Add New Movie';
+                document.getElementById('movie-active').checked = true;
+                movieModal.show();
+            });
+
+            window.editMovie = function(id) {
+                const m = moviesCache.find(x => x.id === id);
+                if (!m) return;
+                document.getElementById('movie-id').value = m.id;
+                document.getElementById('movie-modal-title').textContent = 'Edit Movie: ' + m.title;
+                document.getElementById('movie-title').value = m.title;
+                document.getElementById('movie-rating').value = m.rating || 8.0;
+                document.getElementById('movie-genre').value = m.genre;
+                document.getElementById('movie-language').value = m.language;
+                document.getElementById('movie-duration').value = m.durationMinutes;
+                document.getElementById('movie-release').value = m.releaseDate || '';
+                document.getElementById('movie-poster').value = m.posterUrl || '';
+                document.getElementById('movie-trailer').value = m.trailerUrl || '';
+                document.getElementById('movie-desc').value = m.description || '';
+                document.getElementById('movie-active').checked = m.active;
+                movieModal.show();
+            };
+
+            window.deleteMovie = async function(id) {
+                if (!confirm('Deactivate this movie? Shows referencing it will be preserved but movie will be inactive.')) return;
+                try {
+                    await API.delete('/api/movies/' + id);
+                    showToast('Movie deactivated successfully', 'success');
+                    await loadMovies();
+                } catch (e) {
+                    showToast('Failed to deactivate movie: ' + e.message, 'error');
+                }
+            };
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('movie-id').value;
+                const payload = {
+                    title: document.getElementById('movie-title').value.trim(),
+                    rating: parseFloat(document.getElementById('movie-rating').value) || null,
+                    genre: document.getElementById('movie-genre').value.trim(),
+                    language: document.getElementById('movie-language').value.trim(),
+                    durationMinutes: parseInt(document.getElementById('movie-duration').value, 10),
+                    releaseDate: document.getElementById('movie-release').value || null,
+                    posterUrl: document.getElementById('movie-poster').value.trim() || null,
+                    trailerUrl: document.getElementById('movie-trailer').value.trim() || null,
+                    description: document.getElementById('movie-desc').value.trim(),
+                    active: document.getElementById('movie-active').checked
+                };
+
+                try {
+                    if (id) {
+                        await API.put('/api/movies/' + id, payload);
+                        showToast('Movie updated successfully', 'success');
+                    } else {
+                        await API.post('/api/movies', payload);
+                        showToast('Movie added successfully', 'success');
+                    }
+                    movieModal.hide();
+                    await loadMovies();
+                } catch (err) {
+                    showToast('Save failed: ' + err.message, 'error');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

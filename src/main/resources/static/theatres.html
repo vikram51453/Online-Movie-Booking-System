@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theatres &amp; Cinemas | CineSphere</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+
+    <main class="container my-5">
+        <div class="row align-items-center mb-4">
+            <div class="col-md-7">
+                <h1 class="h2 mb-1" id="theatre-page-heading">Cinema Locations &amp; Theatres</h1>
+                <p class="text-secondary mb-0" id="theatre-page-subheading">Choose your preferred multiplex venue</p>
+            </div>
+            <div class="col-md-5 mt-3 mt-md-0">
+                <input type="text" id="theatre-search" class="form-control" placeholder="Search by theatre name or city...">
+            </div>
+        </div>
+
+        <div id="theatre-banner-movie" class="cinema-card p-3 mb-4 d-flex justify-content-between align-items-center" style="display: none !important;">
+            <div class="d-flex align-items-center gap-3">
+                <i class="bi bi-film fs-2 text-danger"></i>
+                <div>
+                    <span class="text-muted small">Filtering theatres showing:</span>
+                    <h5 class="text-white mb-0" id="theatre-movie-title"></h5>
+                </div>
+            </div>
+            <a href="/theatres.html" class="btn btn-cinema-outline btn-cinema-sm">Show All Theatres</a>
+        </div>
+
+        <div id="theatres-loading" class="text-center py-5">
+            <div class="spinner-border text-danger" role="status"></div>
+            <p class="text-muted mt-2">Loading theatres...</p>
+        </div>
+
+        <div class="row g-4" id="theatres-list" style="display: none;"></div>
+
+        <div id="theatres-empty" class="text-center py-5 cinema-card" style="display: none;">
+            <i class="bi bi-geo-alt fs-1 text-muted mb-3 d-block"></i>
+            <h5>No Theatres Found</h5>
+            <p class="text-secondary">No cinema locations match your search.</p>
+        </div>
+    </main>
+
+    <div id="footer-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const movieId = getQueryParam('movieId');
+            const searchInput = document.getElementById('theatre-search');
+            const list = document.getElementById('theatres-list');
+            const loading = document.getElementById('theatres-loading');
+            const empty = document.getElementById('theatres-empty');
+            const movieBanner = document.getElementById('theatre-banner-movie');
+            const movieTitleEl = document.getElementById('theatre-movie-title');
+
+            let allTheatres = [];
+
+            if (movieId) {
+                try {
+                    const mRes = await API.get('/api/movies/' + movieId);
+                    if (mRes.data) {
+                        movieTitleEl.textContent = mRes.data.title;
+                        movieBanner.style.setProperty('display', 'flex', 'important');
+                        document.getElementById('theatre-page-heading').textContent = `Theatres Showing ${mRes.data.title}`;
+                    }
+                } catch (e) {}
+            }
+
+            async function loadTheatres() {
+                loading.style.display = 'block';
+                list.style.display = 'none';
+                empty.style.display = 'none';
+
+                try {
+                    let url = '/api/theatres';
+                    if (movieId) {
+                        url = `/api/theatres/for-movie/${movieId}`;
+                    }
+                    const res = await API.get(url);
+                    allTheatres = res.data || [];
+                    renderTheatres();
+                } catch (err) {
+                    loading.style.display = 'none';
+                    showToast('Failed to load theatres: ' + err.message, 'error');
+                }
+            }
+
+            function renderTheatres() {
+                loading.style.display = 'none';
+                const query = searchInput.value.toLowerCase().trim();
+
+                const filtered = allTheatres.filter(t => 
+                    t.name.toLowerCase().includes(query) || 
+                    t.city.toLowerCase().includes(query) ||
+                    t.address.toLowerCase().includes(query)
+                );
+
+                if (filtered.length === 0) {
+                    empty.style.display = 'block';
+                    list.style.display = 'none';
+                    return;
+                }
+
+                empty.style.display = 'none';
+                list.innerHTML = '';
+
+                filtered.forEach(theatre => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 col-lg-4';
+                    col.innerHTML = `
+                        <div class="cinema-card p-4 h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h4 class="h5 text-white mb-0">${escapeHtml(theatre.name)}</h4>
+                                    <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50">${escapeHtml(theatre.city)}</span>
+                                </div>
+                                <p class="text-secondary small mb-3">
+                                    <i class="bi bi-geo-alt-fill me-1 text-muted"></i> ${escapeHtml(theatre.address)}
+                                </p>
+                                <div class="d-flex align-items-center gap-2 mb-4 text-muted small">
+                                    <span class="badge bg-dark border border-secondary border-opacity-25">
+                                        <i class="bi bi-display me-1"></i> ${theatre.totalScreens} Screens
+                                    </span>
+                                    <span class="badge bg-dark border border-secondary border-opacity-25">
+                                        <i class="bi bi-volume-up me-1"></i> Dolby Atmos
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="pt-3 border-top border-secondary border-opacity-25">
+                                <a href="/shows.html?theatreId=${theatre.id}${movieId ? `&movieId=${movieId}` : ''}" class="btn btn-cinema w-100">
+                                    <i class="bi bi-clock me-1"></i> View Showtimes
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(col);
+                });
+                list.style.display = 'flex';
+            }
+
+            searchInput.addEventListener('input', renderTheatres);
+            await loadTheatres();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings | CineSphere</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+
+    <main class="container my-5">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 text-white mb-1">My Bookings History</h1>
+                <p class="text-secondary mb-0">View your active reservations, tickets, and past bookings</p>
+            </div>
+            <a href="/movies.html" class="btn btn-cinema btn-cinema-sm">
+                <i class="bi bi-film me-1"></i> Book Another Movie
+            </a>
+        </div>
+
+        <div id="bookings-loading" class="text-center py-5">
+            <div class="spinner-border text-danger" role="status"></div>
+            <p class="text-muted mt-2">Loading your cinema bookings...</p>
+        </div>
+
+        <div id="bookings-list" class="d-flex flex-column gap-3" style="display: none;"></div>
+
+        <div id="bookings-empty" class="text-center py-5 cinema-card" style="display: none;">
+            <i class="bi bi-ticket-perforated fs-1 text-muted mb-3 d-block"></i>
+            <h5>No Bookings Found</h5>
+            <p class="text-secondary">You haven't reserved any movie tickets yet.</p>
+            <a href="/movies.html" class="btn btn-cinema mt-2">Explore Now Showing Movies</a>
+        </div>
+    </main>
+
+    <!-- Cancel Confirmation Modal -->
+    <div class="modal fade" id="cancelModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary border-opacity-25">
+                <div class="modal-header border-secondary border-opacity-25">
+                    <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Cancel Booking</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Are you sure you want to cancel booking <strong id="cancel-modal-ref" class="text-warning font-monospace"></strong>?</p>
+                    <p class="text-secondary small mb-0">Your reserved seats will be immediately released back to the screen and your payment will be refunded.</p>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-cinema-outline btn-cinema-sm" data-bs-dismiss="modal">Keep Booking</button>
+                    <button type="button" class="btn btn-danger btn-cinema-sm" id="confirm-cancel-btn">Confirm Cancellation</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loading = document.getElementById('bookings-loading');
+            const list = document.getElementById('bookings-list');
+            const empty = document.getElementById('bookings-empty');
+
+            let bookingToCancelId = null;
+            const cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
+
+            async function loadBookings() {
+                loading.style.display = 'block';
+                list.style.display = 'none';
+                empty.style.display = 'none';
+
+                try {
+                    const user = await API.getCurrentUser();
+                    if (!user) {
+                        window.location.href = '/login.html?redirect=/my-bookings.html';
+                        return;
+                    }
+
+                    const res = await API.get('/api/bookings/my');
+                    loading.style.display = 'none';
+
+                    if (!res.data || res.data.length === 0) {
+                        empty.style.display = 'block';
+                        return;
+                    }
+
+                    list.innerHTML = '';
+                    res.data.forEach(b => {
+                        const isConfirmed = b.status === 'CONFIRMED';
+                        const card = document.createElement('div');
+                        card.className = 'cinema-card p-4';
+                        card.innerHTML = `
+                            <div class="row g-4 align-items-center">
+                                <div class="col-auto">
+                                    <img src="${b.moviePosterUrl || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=200&q=80'}" alt="" style="width: 70px; height: 100px; object-fit: cover; border-radius: 8px;">
+                                </div>
+                                <div class="col">
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                        <h3 class="h5 text-white mb-0">${escapeHtml(b.movieTitle)}</h3>
+                                        <span class="${isConfirmed ? 'badge-status-confirmed' : 'badge-status-cancelled'}">
+                                            ${b.status}
+                                        </span>
+                                        <span class="badge-paid">${b.paymentStatus}</span>
+                                    </div>
+                                    <div class="text-secondary small mb-2">
+                                        Reference: <strong class="text-warning font-monospace">${b.bookingReference}</strong>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-3 small text-secondary">
+                                        <span><i class="bi bi-geo-alt text-danger me-1"></i>${escapeHtml(b.theatreName)} (${escapeHtml(b.theatreCity)})</span>
+                                        <span><i class="bi bi-display text-danger me-1"></i>${escapeHtml(b.screenName)}</span>
+                                        <span><i class="bi bi-calendar text-danger me-1"></i>${formatDate(b.showDate)}</span>
+                                        <span><i class="bi bi-clock text-danger me-1"></i>${formatTime(b.startTime)}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-auto text-md-end">
+                                    <div class="text-secondary small">Seats: <strong class="text-white">${b.seatNumbers.join(', ')}</strong></div>
+                                    <div class="fs-5 fw-bold text-white mb-3">${formatCurrency(b.totalAmount)}</div>
+                                    <div class="d-flex gap-2 justify-content-md-end">
+                                        <a href="/booking-confirmation.html?ref=${b.bookingReference}" class="btn btn-cinema-outline btn-cinema-sm">
+                                            <i class="bi bi-ticket me-1"></i> View Ticket
+                                        </a>
+                                        ${isConfirmed ? `
+                                        <button class="btn btn-outline-danger btn-cinema-sm" onclick="promptCancel(${b.id}, '${b.bookingReference}')">
+                                            <i class="bi bi-x-circle me-1"></i> Cancel
+                                        </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        list.appendChild(card);
+                    });
+                    list.style.display = 'flex';
+                } catch (err) {
+                    loading.style.display = 'none';
+                    showToast('Failed to load bookings: ' + err.message, 'error');
+                }
+            }
+
+            window.promptCancel = function(id, ref) {
+                bookingToCancelId = id;
+                document.getElementById('cancel-modal-ref').textContent = ref;
+                cancelModal.show();
+            };
+
+            document.getElementById('confirm-cancel-btn').addEventListener('click', async () => {
+                if (!bookingToCancelId) return;
+                try {
+                    await API.post(`/api/bookings/${bookingToCancelId}/cancel`, {});
+                    cancelModal.hide();
+                    showToast('Booking cancelled and seats released successfully', 'success');
+                    await loadBookings();
+                } catch (err) {
+                    showToast('Failed to cancel booking: ' + err.message, 'error');
+                }
+            });
+
+            await loadBookings();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Summary | CineSphere</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+
+    <main class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <h1 class="h2 fw-bold mb-1" style="color: var(--text-pure);">Booking Review &amp; Checkout</h1>
+                        <p class="text-secondary mb-0">Please verify your cinema ticket details before confirming</p>
+                    </div>
+                    <a href="/seat-selection.html" id="btn-back-seats" class="btn btn-cinema-outline btn-cinema-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Modify Seats
+                    </a>
+                </div>
+
+                <div id="auth-alert" class="alert alert-warning d-flex align-items-center justify-content-between p-3 mb-4" style="display: none !important;">
+                    <div>
+                        <i class="bi bi-person-exclamation me-2 fs-5"></i>
+                        <span>You need to be logged in to confirm your ticket reservation.</span>
+                    </div>
+                    <div>
+                        <a href="/login.html?redirect=/booking-summary.html" class="btn btn-dark btn-sm me-2">Log In</a>
+                        <a href="/register.html?redirect=/booking-summary.html" class="btn btn-warning btn-sm">Register</a>
+                    </div>
+                </div>
+
+                <!-- Booking Summary Card -->
+                <div class="order-summary-card mb-4">
+                    <div class="row g-4 align-items-center mb-4 pb-4 border-bottom border-secondary border-opacity-25">
+                        <div class="col-auto">
+                            <img id="summary-movie-poster" src="" alt="" style="width: 80px; height: 115px; object-fit: cover; border-radius: 8px;">
+                        </div>
+                        <div class="col">
+                            <h2 class="h4 fw-bold mb-1" style="color: var(--text-pure);" id="summary-movie-title"></h2>
+                            <div class="text-secondary small mb-2">
+                                <i class="bi bi-geo-alt text-danger me-1"></i> <span id="summary-theatre"></span>
+                            </div>
+                            <div class="badge bg-light border text-dark">
+                                <i class="bi bi-display me-1 text-danger"></i> <span id="summary-screen"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-auto text-md-end">
+                            <div class="text-secondary small">Showtime</div>
+                            <div class="fw-semibold" style="color: var(--text-pure);" id="summary-date"></div>
+                            <div class="text-warning fw-bold fs-5" id="summary-time"></div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Seats Display -->
+                    <div class="mb-4">
+                        <h4 class="h6 fw-bold text-uppercase tracking-wider mb-2" style="color: var(--text-pure);">Selected Seats</h4>
+                        <div class="d-flex flex-wrap gap-2" id="summary-seats-badges"></div>
+                    </div>
+
+                    <!-- Line Items -->
+                    <div class="mb-4">
+                        <h4 class="h6 fw-bold text-uppercase tracking-wider mb-2" style="color: var(--text-pure);">Price Breakdown</h4>
+                        <div id="summary-line-items"></div>
+                        <div class="order-summary-row total-row">
+                            <span>Total Amount</span>
+                            <span class="total-amount" id="summary-final-total">₹0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="p-3 bg-light rounded border border-subtle mb-4">
+                        <h4 class="h6 mb-2" style="color: var(--text-pure);"><i class="bi bi-credit-card-2-front me-2 text-danger"></i>Payment Method</h4>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="pay-upi" value="UPI / QR" checked>
+                            <label class="form-check-label text-secondary small" for="pay-upi">
+                                <i class="bi bi-qr-code-scan me-1 text-warning"></i> UPI / QR Code Instant Pay
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="pay-card" value="Credit / Debit Card">
+                            <label class="form-check-label text-secondary small" for="pay-card">
+                                <i class="bi bi-credit-card me-1 text-primary"></i> Credit / Debit Card (Visa, MasterCard, Amex)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="pay-netbanking" value="Net Banking">
+                            <label class="form-check-label text-secondary small" for="pay-netbanking">
+                                <i class="bi bi-bank me-1 text-success"></i> Net Banking (All Major Banks)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="booking-error-alert" class="alert alert-danger py-2 small" style="display: none;"></div>
+
+                    <button id="btn-confirm-booking" class="btn btn-cinema w-100 py-3 fs-5">
+                        <span id="btn-confirm-text"><i class="bi bi-lock-fill me-2"></i> Confirm Reservation &amp; Pay</span>
+                        <span id="btn-confirm-spinner" class="spinner-border spinner-border-sm ms-2" style="display: none;"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const rawSession = sessionStorage.getItem('pendingBooking');
+            if (!rawSession) {
+                window.location.href = '/shows.html';
+                return;
+            }
+
+            const pending = JSON.parse(rawSession);
+            document.getElementById('btn-back-seats').href = `/seat-selection.html?showId=${pending.showId}`;
+
+            // Populate preview details
+            document.getElementById('summary-movie-poster').src = pending.moviePosterUrl || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=200&q=80';
+            document.getElementById('summary-movie-title').textContent = pending.movieTitle;
+            document.getElementById('summary-theatre').textContent = `${pending.theatreName} (${pending.theatreCity})`;
+            document.getElementById('summary-screen').textContent = `${pending.screenName} - ${pending.screenType}`;
+            document.getElementById('summary-date').textContent = formatDate(pending.showDate);
+            document.getElementById('summary-time').textContent = formatTime(pending.startTime);
+
+            // Badges
+            const badgesContainer = document.getElementById('summary-seats-badges');
+            badgesContainer.innerHTML = '';
+            pending.seats.forEach(s => {
+                const b = document.createElement('span');
+                b.className = 'badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50 px-3 py-2 fs-6';
+                b.innerHTML = `<i class="bi bi-ticket me-1"></i> Seat ${s.seatCode} (${s.seatType})`;
+                badgesContainer.appendChild(b);
+            });
+
+            // Line items
+            const itemsContainer = document.getElementById('summary-line-items');
+            itemsContainer.innerHTML = '';
+            pending.seats.forEach(s => {
+                const row = document.createElement('div');
+                row.className = 'order-summary-row';
+                row.innerHTML = `
+                    <span>Seat ${s.seatCode} (${s.seatType} Tier)</span>
+                    <span class="text-white">${formatCurrency(s.price)}</span>
+                `;
+                itemsContainer.appendChild(row);
+            });
+
+            document.getElementById('summary-final-total').textContent = formatCurrency(pending.provisionalTotal);
+
+            // Auth Check
+            let currentUser = null;
+            try {
+                currentUser = await API.getCurrentUser();
+            } catch (e) {}
+
+            const authAlert = document.getElementById('auth-alert');
+            const confirmBtn = document.getElementById('btn-confirm-booking');
+
+            if (!currentUser) {
+                authAlert.style.setProperty('display', 'flex', 'important');
+                confirmBtn.disabled = true;
+            }
+
+            confirmBtn.addEventListener('click', async () => {
+                if (!currentUser) {
+                    window.location.href = `/login.html?redirect=/booking-summary.html`;
+                    return;
+                }
+
+                const errorBox = document.getElementById('booking-error-alert');
+                const btnText = document.getElementById('btn-confirm-text');
+                const btnSpinner = document.getElementById('btn-confirm-spinner');
+
+                errorBox.style.display = 'none';
+                confirmBtn.disabled = true;
+                btnSpinner.style.display = 'inline-block';
+
+                const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked').value;
+
+                try {
+                    const bookingPayload = {
+                        showId: pending.showId,
+                        seatIds: pending.seatIds,
+                        paymentMethod: selectedPayment
+                    };
+
+                    const response = await API.post('/api/bookings', bookingPayload);
+                    const booking = response.data;
+
+                    // Clear pending session
+                    sessionStorage.removeItem('pendingBooking');
+                    // Save last confirmed booking
+                    sessionStorage.setItem('lastBooking', JSON.stringify(booking));
+
+                    showToast('Booking confirmed successfully!', 'success');
+                    setTimeout(() => {
+                        window.location.href = `/booking-confirmation.html?ref=${booking.bookingReference}`;
+                    }, 500);
+                } catch (err) {
+                    errorBox.textContent = err.message || 'Booking failed. Seats may have been reserved by someone else.';
+                    errorBox.style.display = 'block';
+                    confirmBtn.disabled = false;
+                    btnSpinner.style.display = 'none';
+
+                    if (err.message && err.message.toLowerCase().includes('already')) {
+                        setTimeout(() => {
+                            window.location.href = `/seat-selection.html?showId=${pending.showId}`;
+                        }, 2500);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
